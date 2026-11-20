@@ -1,0 +1,21 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) WECHAT_ARCH="x86_64" ;;
+        arm64) WECHAT_ARCH="arm64" ;;
+        *) WECHAT_ARCH="${HOST_ARCH}" ;;
+    esac
+
+    # 官方直链 CDN
+    URL="https://dldir1.qq.com/weixin/Universal/Linux/WeChatLinux_${WECHAT_ARCH}.deb"
+
+    # 从官网前端获取最新正式发布的真实版本号（避免日期误判导致死循环升级及 416 损坏）
+    OFFICIAL_VER=$(curl -fsSL "https://linux.weixin.qq.com/" 2>/dev/null | grep -oP '"4\.[0-9.]+"' | head -n 1 | tr -d '"')
+    VERSION_PUBLISHED="${OFFICIAL_VER:-4.1.13}"
+fi
+
+PRETTY_NAME="WeChat"
+WEBSITE="https://linux.weixin.qq.com/"
+SUMMARY="Official Tencent WeChat client for Linux."

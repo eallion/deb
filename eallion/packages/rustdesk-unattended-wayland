@@ -1,0 +1,26 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+get_github_releases "rustdesk/rustdesk"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) TARGET_ARCH="x86_64" ;;
+        arm64) TARGET_ARCH="aarch64" ;;
+        *) TARGET_ARCH="${HOST_ARCH}" ;;
+    esac
+
+    # 匹配 Wayland 无人值守专用版
+    if [ "${DEBGET_CHANNEL}" = "beta" ] || [ "${DEBGET_PRERELEASE}" = "1" ]; then
+        URL=$(grep -E "browser_download_url.*rustdesk-unattended-wayland.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    else
+        URL=$(grep -E "browser_download_url.*rustdesk-unattended-wayland.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vEi '(alpha|beta|rc|preview|dev|nightly)' | head -n 1 | cut -d '"' -f 4)
+        [ -z "${URL}" ] && URL=$(grep -E "browser_download_url.*rustdesk-unattended-wayland.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    VERSION_PUBLISHED=$(cut -d '/' -f 8 <<< "${URL}" | sed -E 's/^v//')
+fi
+
+PRETTY_NAME="RustDesk (Unattended Wayland)"
+WEBSITE="https://rustdesk.com/"
+SUMMARY="An open-source remote desktop alternative, Wayland unattended preview build."

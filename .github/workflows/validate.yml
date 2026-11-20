@@ -1,0 +1,55 @@
+name: Validate Repository
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate manifest file format and packages
+        run: |
+          if [ ! -f "eallion/manifest" ]; then
+            echo "Error: eallion/manifest file does not exist!"
+            exit 1
+          fi
+
+          BASE_URL=$(head -n 1 eallion/manifest)
+          EXPECTED_URL="https://raw.githubusercontent.com/eallion/deb/main/eallion"
+          if [ "${BASE_URL}" != "${EXPECTED_URL}" ]; then
+            echo "Error: First line of manifest must be exactly '${EXPECTED_URL}', but got '${BASE_URL}'."
+            exit 1
+          fi
+
+          # 确保 manifest 中每一项都存在对应的 package 脚本
+          tail -n +2 eallion/manifest | while read -r line; do
+            [ -z "$line" ] && continue
+            if [ ! -f "eallion/packages/$line" ]; then
+              echo "Error: Package file 'eallion/packages/$line' specified in manifest does not exist!"
+              exit 1
+            fi
+          done
+
+          # 确保 packages 目录下的所有文件都在 manifest 中登记
+          for pkg in eallion/packages/*; do
+            [ ! -f "$pkg" ] && continue
+            pkg_name=$(basename "$pkg")
+            if ! grep -qx "$pkg_name" eallion/manifest; then
+              echo "Error: Package file '$pkg_name' is missing in eallion/manifest!"
+              exit 1
+            fi
+          done
+
+      - name: Syntax check package scripts
+        run: |
+          for pkg in eallion/packages/*; do
+            if [ -f "$pkg" ]; then
+              bash -n "$pkg"
+            fi
+          done

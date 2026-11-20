@@ -1,0 +1,31 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+get_github_releases "EasyTier/Easytier"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) TARGET_ARCH="(amd64|x86_64)" ;;
+        arm64) TARGET_ARCH="(arm64|aarch64)" ;;
+        *) TARGET_ARCH="${HOST_ARCH}" ;;
+    esac
+
+    # 优先匹配 CLI 专用 deb（排除 gui）
+    if [ "${DEBGET_CHANNEL}" = "beta" ] || [ "${DEBGET_PRERELEASE}" = "1" ]; then
+        URL=$(grep -E "browser_download_url.*easytier.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vi 'gui' | head -n 1 | cut -d '"' -f 4)
+    else
+        URL=$(grep -E "browser_download_url.*easytier.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vi 'gui' | grep -vEi '(alpha|beta|rc|preview|dev|nightly)' | head -n 1 | cut -d '"' -f 4)
+        [ -z "${URL}" ] && URL=$(grep -E "browser_download_url.*easytier.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vi 'gui' | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    # 若上游暂未独立发布 CLI deb，回退至可用包避免校验中断
+    if [ -z "${URL}" ]; then
+        URL=$(grep -E "browser_download_url.*easytier.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    VERSION_PUBLISHED=$(echo "${URL}" | grep -oP 'easytier.*_\K[0-9.]+(?=_)' || cut -d '/' -f 8 <<< "${URL}" | sed -E 's/^[^0-9]*//; s/[^0-9.].*//')
+fi
+
+PRETTY_NAME="EasyTier"
+WEBSITE="https://easytier.cn/"
+SUMMARY="A simple, decentralized mesh VPN with wireguard support (Core/CLI)."

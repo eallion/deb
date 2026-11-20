@@ -1,0 +1,19 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64"
+
+get_github_releases "anefzaoui/misterdownloadmanager"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    if [ "${DEBGET_CHANNEL}" = "beta" ] || [ "${DEBGET_PRERELEASE}" = "1" ]; then
+        URL=$(grep -E "browser_download_url.*MisterDownloadManager.*-linux-(x86_64|amd64)\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    else
+        URL=$(grep -E "browser_download_url.*MisterDownloadManager.*-linux-(x86_64|amd64)\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vEi '(alpha|beta|rc|preview|dev)' | head -n 1 | cut -d '"' -f 4)
+        [ -z "${URL}" ] && URL=$(grep -E "browser_download_url.*MisterDownloadManager.*-linux-(x86_64|amd64)\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    VERSION_PUBLISHED=$(cut -d '/' -f 8 <<< "${URL}" | sed -E 's/^v//')
+fi
+
+PRETTY_NAME="Mister Download Manager"
+WEBSITE="https://github.com/anefzaoui/misterdownloadmanager"
+SUMMARY="Modern and fast desktop download manager."

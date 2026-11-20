@@ -1,0 +1,26 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+get_github_releases "rgcsekaraa/brows3"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) TARGET_ARCH="(amd64|x86_64)" ;;
+        arm64) TARGET_ARCH="(arm64|aarch64)" ;;
+        *) TARGET_ARCH="${HOST_ARCH}" ;;
+    esac
+
+    if [ "${DEBGET_CHANNEL}" = "beta" ] || [ "${DEBGET_PRERELEASE}" = "1" ]; then
+        URL=$(grep -E "browser_download_url.*brows3.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    else
+        URL=$(grep -E "browser_download_url.*brows3.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vEi '(alpha|beta|rc|preview|dev|nightly)' | head -n 1 | cut -d '"' -f 4)
+        [ -z "${URL}" ] && URL=$(grep -E "browser_download_url.*brows3.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    # 优先从文件名提取规范版本号，剥离 app-v 等非数字前缀，防止 dpkg 告警及死循环重复更新
+    VERSION_PUBLISHED=$(echo "${URL}" | grep -oP 'Brows3_\K[0-9.]+(?=_)' || cut -d '/' -f 8 <<< "${URL}" | sed -E 's/^[^0-9]*//; s/[^0-9.].*//')
+fi
+
+PRETTY_NAME="Brows3"
+WEBSITE="https://github.com/rgcsekaraa/brows3"
+SUMMARY="Fast, open-source S3 desktop client built with Rust and Tauri."

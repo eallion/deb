@@ -1,0 +1,27 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+get_github_releases "EasyTier/Easytier"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) TARGET_ARCH="(amd64|x86_64)" ;;
+        arm64) TARGET_ARCH="(arm64|aarch64)" ;;
+        *) TARGET_ARCH="${HOST_ARCH}" ;;
+    esac
+
+    if [ "${DEBGET_CHANNEL}" = "beta" ] || [ "${DEBGET_PRERELEASE}" = "1" ]; then
+        URL=$(grep -E "browser_download_url.*easytier-gui.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    else
+        # 默认排除 nightly 与测试版本，锁定正式稳定版
+        URL=$(grep -E "browser_download_url.*easytier-gui.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | grep -vEi '(alpha|beta|rc|preview|dev|nightly)' | head -n 1 | cut -d '"' -f 4)
+        [ -z "${URL}" ] && URL=$(grep -E "browser_download_url.*easytier-gui.*${TARGET_ARCH}\.deb\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    # 优先从 deb 文件名中解析数字版本，避免 nightly 等非版本字符串触发 dpkg 语法警告与重复下载
+    VERSION_PUBLISHED=$(echo "${URL}" | grep -oP 'easytier-gui_\K[0-9.]+(?=_)' || cut -d '/' -f 8 <<< "${URL}" | sed -E 's/^[^0-9]*//; s/[^0-9.].*//')
+fi
+
+PRETTY_NAME="EasyTier GUI"
+WEBSITE="https://easytier.cn/"
+SUMMARY="Official graphical user interface for EasyTier."

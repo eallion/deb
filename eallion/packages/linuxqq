@@ -1,0 +1,41 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) QQ_KEY="x64DownloadUrl" ;;
+        arm64) QQ_KEY="arm64DownloadUrl" ;;
+        *) QQ_KEY="x64DownloadUrl" ;;
+    esac
+
+    # 获取官方最新版本配置 JSON
+    PC_CONFIG=$(curl -fsSL "https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/pcConfig.json" 2>/dev/null)
+    [ -z "${PC_CONFIG}" ] && PC_CONFIG=$(curl -fsSL "https://qq-web.cdn-go.cn/im.qq.com_new/latest/rainbow/pcConfig.json" 2>/dev/null)
+
+    RAW_URL=$(echo "${PC_CONFIG}" | jq -r ".Linux.${QQ_KEY}.deb // empty" 2>/dev/null)
+    VERSION_PUBLISHED=$(echo "${PC_CONFIG}" | jq -r '.Linux.version // empty' 2>/dev/null)
+
+    if [ -n "${RAW_URL}" ]; then
+        # 请求带有效签名的下载直链（避免 403 Forbidden 鉴权限制）
+        SIGNED_RES=$(curl -s -X POST "https://im.qq.com/http2rpc/gotrpc/noauth/trpc.qqntv2.urlsign.UrlSign/GetSign" \
+            -H "Content-Type: application/json" \
+            -H 'x-oidb: {"uint32_command":"0x9b8e","uint32_service_type":1}' \
+            -H "Origin: https://im.qq.com" \
+            -H "Referer: https://im.qq.com/linuxqq" \
+            -d "{\"url\":\"${RAW_URL}\"}" 2>/dev/null)
+        URL=$(echo "${SIGNED_RES}" | jq -r '.data.url // empty' 2>/dev/null)
+        [ -z "${URL}" ] && URL="${RAW_URL}"
+    fi
+
+    # 兜底提取版本号
+    if [ -z "${VERSION_PUBLISHED}" ] && [ -n "${URL}" ]; then
+        VERSION_PUBLISHED=$(echo "${URL}" | grep -oP 'linuxqq_\K[0-9.-]+(?=_)' || echo "3.0.0")
+    fi
+
+    # 显式去除签名查询参数（?sign=...&t=...），确保本地落盘文件名以 .deb 结尾，避免 apt 拒绝解析
+    FILE=$(cut -d '?' -f 1 <<< "${URL##*/}")
+fi
+
+PRETTY_NAME="Linux QQ"
+WEBSITE="https://im.qq.com/linuxqq/"
+SUMMARY="Tencent QQ official client for Linux."
