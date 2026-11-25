@@ -1,0 +1,50 @@
+DEFVER=1
+ARCHS_SUPPORTED="amd64 arm64"
+
+get_github_releases "ipfs/kubo" "" --no-filter
+
+if [ "${ACTION}" != "prettylist" ]; then
+    case "${HOST_ARCH}" in
+        amd64) TARGET_ARCH="amd64" ;;
+        arm64) TARGET_ARCH="arm64" ;;
+        *) TARGET_ARCH="${HOST_ARCH}" ;;
+    esac
+
+    if [ "${DEBGET_CHANNEL}" = "beta" ] || [ "${DEBGET_PRERELEASE}" = "1" ]; then
+        URL=$(grep -E "browser_download_url.*kubo_.*_linux-${TARGET_ARCH}\.tar\.gz\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    else
+        URL=$(grep -E "browser_download_url.*kubo_.*_linux-${TARGET_ARCH}\.tar\.gz\"" "${CACHE_FILE}" 2>/dev/null | grep -vEi '(alpha|beta|rc|preview|dev)' | head -n 1 | cut -d '"' -f 4)
+        [ -z "${URL}" ] && URL=$(grep -E "browser_download_url.*kubo_.*_linux-${TARGET_ARCH}\.tar\.gz\"" "${CACHE_FILE}" 2>/dev/null | head -n 1 | cut -d '"' -f 4)
+    fi
+
+    VERSION_PUBLISHED=$(cut -d '/' -f 8 <<< "${URL}" | sed -E 's/^v//')
+fi
+
+FILE="kubo.deb"
+
+post_download() {
+    local tmp
+    tmp=$(mktemp -d) || return 1
+    tar -xzf "${CACHE_DIR}/${FILE}" -C "${tmp}" || { rm -rf "${tmp}"; return 1; }
+
+    mkdir -p "${tmp}/pkg/usr/bin" "${tmp}/pkg/DEBIAN"
+    install -m 755 "${tmp}/kubo/ipfs" "${tmp}/pkg/usr/bin/ipfs"
+
+    cat <<EOF > "${tmp}/pkg/DEBIAN/control"
+Package: kubo
+Version: ${VERSION_PUBLISHED}
+Section: utils
+Priority: optional
+Architecture: ${HOST_ARCH}
+Maintainer: IPFS Community <https://github.com/ipfs/kubo>
+Provides: ipfs
+Description: ${SUMMARY}
+EOF
+
+    ${ELEVATE} dpkg-deb --build --nocheck "${tmp}/pkg" "${CACHE_DIR}/${FILE}" || { rm -rf "${tmp}"; return 1; }
+    rm -rf "${tmp}"
+}
+
+PRETTY_NAME="Kubo (IPFS)"
+WEBSITE="https://github.com/ipfs/kubo"
+SUMMARY="An open-source IPFS implementation in Go, providing the ipfs CLI."

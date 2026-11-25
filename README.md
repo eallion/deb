@@ -38,6 +38,7 @@ sudo deb-get upgrade
 | `easytier` | 去中心化 Mesh VPN 核心服务（Core/CLI） | [EasyTier/Easytier](https://github.com/EasyTier/Easytier) | `sudo deb-get install easytier` |
 | `easytier-gui` | EasyTier 官方图形界面桌面端（GUI） | [EasyTier/Easytier](https://github.com/EasyTier/Easytier) | `sudo deb-get install easytier-gui` |
 | `flclash` | 基于 ClashMeta 的跨平台代理客户端 | [chen08209/FlClash](https://github.com/chen08209/FlClash) | `sudo deb-get install flclash` |
+| `kubo` | IPFS 官方 Go 语言实现核心程序（提供 `ipfs` CLI） | [ipfs/kubo](https://github.com/ipfs/kubo) | `sudo deb-get install kubo` |
 | `linuxqq` | 腾讯 QQ Linux 官方客户端 | [im.qq.com](https://im.qq.com/linuxqq/) | `sudo deb-get install linuxqq` |
 | `misterdownloadmanager` | 现代化高速桌面下载器 | [anefzaoui/misterdownloadmanager](https://github.com/anefzaoui/misterdownloadmanager) | `sudo deb-get install misterdownloadmanager` |
 | `moke` | 墨客 Talebook 个人书库客户端 | [talebook/moke](https://github.com/talebook/moke) | `sudo deb-get install moke` |
